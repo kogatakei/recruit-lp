@@ -1,0 +1,2 @@
+/* index.html 内のインライン <script> #1 を抽出（元ページ: https://recruit-service.crazy.co.jp/） */
+(function(d){if(!location.hash)return;d.style.scrollBehavior="auto";function r(){d.style.scrollBehavior="";removeEventListener("click",r,true);removeEventListener("keydown",r,true);removeEventListener("load",r)}addEventListener("click",r,true);addEventListener("keydown",r,true);addEventListener("load",r)})(document.documentElement)
