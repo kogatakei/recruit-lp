@@ -29,7 +29,7 @@ export function makeMetaEvent(candidacy, { requisitionId, channelType, sourceUrl
   if (!Number.isFinite(eventTime)) return null;
 
   return {
-    event_name: 'SubmitApplication',
+    event_name: 'CompleteRegistration',
     event_time: eventTime,
     event_id: `herp:${candidacy.id}`,
     action_source: 'website',
