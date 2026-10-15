@@ -8,7 +8,7 @@ test('daily window follows JST, including UTC date boundary', () => {
   assert.equal(jstDate('2026-10-14T15:00:00Z'), '2026-10-15');
 });
 
-test('only the configured job and channel become SubmitApplication', () => {
+test('only the configured job and channel become CompleteRegistration', () => {
   const options = {
     requisitionId: 'job-99', channelType: 'company-site',
     sourceUrl: 'https://herp.careers/v1/crazy/job99', targetDate: '2026-10-14',
@@ -18,7 +18,7 @@ test('only the configured job and channel become SubmitApplication', () => {
     appliedAt: '2026-10-14T12:00:00+09:00', email: ' Person@Example.COM ',
   };
   const event = makeMetaEvent(candidacy, options);
-  assert.equal(event.event_name, 'SubmitApplication');
+  assert.equal(event.event_name, 'CompleteRegistration');
   assert.equal(event.event_id, 'herp:app-1');
   assert.equal(event.user_data.em[0], createHash('sha256').update('person@example.com').digest('hex'));
   assert.equal(makeMetaEvent({ ...candidacy, requisitionId: 'another-job' }, options), null);
@@ -32,7 +32,7 @@ test('endpoint fails closed without a cron secret', async () => {
   assert.equal(response.status, 401);
 });
 
-test('sync sends only a hashed email and a HERP SubmitApplication', async (t) => {
+test('sync sends only a hashed email and a HERP CompleteRegistration', async (t) => {
   const { default: handler } = await import('../api/herp-meta.mjs');
   const keys = ['CRON_SECRET', 'HERP_META_ENABLED', 'HERP_API_KEY', 'HERP_REQUISITION_ID',
     'HERP_CHANNEL_TYPE', 'HERP_EVENT_SOURCE_URL', 'META_CAPI_TOKEN', 'META_PIXEL_ID'];
@@ -70,7 +70,7 @@ test('sync sends only a hashed email and a HERP SubmitApplication', async (t) =>
     headers: { Authorization: 'Bearer local-test-secret' },
   }));
   assert.equal(response.status, 200);
-  assert.equal(metaPayload.data[0].event_name, 'SubmitApplication');
+  assert.equal(metaPayload.data[0].event_name, 'CompleteRegistration');
   assert.equal(JSON.stringify(metaPayload).includes('Person@Example.com'), false);
   assert.equal(JSON.stringify(metaPayload).includes('Private Candidate'), false);
 });
