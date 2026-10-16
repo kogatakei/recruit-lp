@@ -27,6 +27,10 @@
 | `META_PIXEL_ID` | `2136969587217791` |
 | `HERP_META_ENABLED` | テストと設定確認後に `true`。それまでは未設定 |
 
+## 応募経路の診断
+
+`HERP_META_ENABLED` が未設定の状態でも、認証済みの `GET /api/herp-meta?inspect=channels` で直近30日間の求人99の `channel.type` ごとの件数だけを確認できます。`Authorization: Bearer <CRON_SECRET>` が必須です。応募者の氏名・メールアドレス・応募IDは応答に含めず、Metaにも送信しません。結果を実際の求人ページ経由の応募と照合してから `HERP_CHANNEL_TYPE` を設定します。経路を特定できない場合はHERP管理者に確認します。
+
 ## 動作と検証
 
 - Vercel Cronが毎日00:00 UTC（日本時間09:00）に前日の応募を取得し、求人IDと応募経路で絞る。
