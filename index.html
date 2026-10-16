@@ -99,6 +99,21 @@ fbq('track', 'PageView');
   }, true);
 })();</script>
 <!-- Lステップ広告流入計測 -->
-<script src="https://ltag.jp/lc/9iyi3r"></script>
+<script>
+(function () {
+  var checklist = new URLSearchParams(window.location.search).has('seisiga_checklist');
+  var routeId = checklist ? 'AiGyVx' : '9iyi3r';
+  if (checklist) {
+    document.querySelectorAll('a[href^="https://liff.line.me/2011748959-QTugs7Rl/landing"]').forEach(function (link) {
+      var url = new URL(link.href);
+      url.searchParams.set('lp', routeId);
+      link.href = url.toString();
+    });
+  }
+  var tag = document.createElement('script');
+  tag.src = 'https://ltag.jp/lc/' + routeId;
+  document.body.appendChild(tag);
+})();
+</script>
 </body>
 </html>
