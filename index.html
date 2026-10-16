@@ -102,12 +102,24 @@ fbq('track', 'PageView');
 <script src="https://ltag.jp/lc/9iyi3r"></script>
 <script>
 (function () {
-  var checklist = new URLSearchParams(window.location.search).get('seisiga_checklist');
-  if (checklist === null) return;
-  document.querySelectorAll('a[href^="https://liff.line.me/2011748959-QTugs7Rl/landing"]').forEach(function (link) {
+  var landingParams = new URLSearchParams(window.location.search);
+  var campaignKeys = ['seisiga_oogiri', 'seisiga_emohitokoto', 'seisiga_checklist'];
+  var selector = 'a[href^="https://liff.line.me/2011748959-QTugs7Rl/landing"]';
+
+  function syncCampaignParams(link) {
     var url = new URL(link.href);
-    url.searchParams.set('seisiga_checklist', checklist);
-    link.href = url.toString();
+    campaignKeys.forEach(function (key) {
+      var value = landingParams.get(key);
+      if (value) url.searchParams.set(key, value);
+      else url.searchParams.delete(key);
+    });
+    if (link.href !== url.toString()) link.href = url.toString();
+  }
+
+  document.querySelectorAll(selector).forEach(syncCampaignParams);
+  document.addEventListener('click', function (event) {
+    var link = event.target.closest(selector);
+    if (link) syncCampaignParams(link);
   });
 })();
 </script>
