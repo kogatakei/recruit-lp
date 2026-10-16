@@ -1,5 +1,11 @@
 {
   "framework": null,
   "buildCommand": "",
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "crons": [
+    {
+      "path": "/api/herp-meta",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }
