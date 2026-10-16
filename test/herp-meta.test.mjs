@@ -32,6 +32,40 @@ test('endpoint fails closed without a cron secret', async () => {
   assert.equal(response.status, 401);
 });
 
+test('authenticated channel inspection returns counts without applicant data or Meta delivery', async (t) => {
+  const { default: handler } = await import('../api/herp-meta.mjs');
+  const keys = ['CRON_SECRET', 'HERP_API_KEY', 'HERP_REQUISITION_ID', 'HERP_META_ENABLED'];
+  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  const originalFetch = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    for (const key of keys) {
+      if (previous[key] === undefined) delete process.env[key];
+      else process.env[key] = previous[key];
+    }
+  });
+  Object.assign(process.env, {
+    CRON_SECRET: 'local-test-secret', HERP_API_KEY: 'herp-test', HERP_REQUISITION_ID: 'job-99',
+  });
+  delete process.env.HERP_META_ENABLED;
+  globalThis.fetch = async (url) => {
+    assert.equal(new URL(url).origin, 'https://public-api.herp.cloud');
+    return Response.json({ candidacies: [
+      { requisitionId: 'job-99', channel: { type: 'company-site' }, email: 'private@example.com' },
+      { requisitionId: 'job-99', channel: { type: 'company-site' }, name: 'Private Candidate' },
+      { requisitionId: 'other-job', channel: { type: 'manual' } },
+    ], hasNextPage: false });
+  };
+  const response = await handler.fetch(new Request('https://example.com/api/herp-meta?inspect=channels', {
+    headers: { Authorization: 'Bearer local-test-secret' },
+  }));
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.deepEqual(result.channels, { 'company-site': 2 });
+  assert.equal(JSON.stringify(result).includes('private@example.com'), false);
+  assert.equal(JSON.stringify(result).includes('Private Candidate'), false);
+});
+
 test('sync sends only a hashed email and a HERP CompleteRegistration', async (t) => {
   const { default: handler } = await import('../api/herp-meta.mjs');
   const keys = ['CRON_SECRET', 'HERP_META_ENABLED', 'HERP_API_KEY', 'HERP_REQUISITION_ID',
