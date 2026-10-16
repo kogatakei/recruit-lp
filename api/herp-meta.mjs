@@ -40,13 +40,13 @@ export function makeMetaEvent(candidacy, { requisitionId, channelType, sourceUrl
   };
 }
 
-async function readHerpCandidacies({ apiKey, requisitionId, targetDate }) {
+async function readHerpCandidacies({ apiKey, requisitionId, fromDate, toDate }) {
   const candidacies = [];
   for (let page = 1; page <= MAX_HERP_PAGES; page++) {
     const url = new URL(HERP_API_URL);
     url.searchParams.set('requisitionId', requisitionId);
-    url.searchParams.set('appliedAtFrom', targetDate);
-    url.searchParams.set('appliedAtTo', targetDate);
+    url.searchParams.set('appliedAtFrom', fromDate);
+    url.searchParams.set('appliedAtTo', toDate);
     url.searchParams.set('page', String(page));
 
     const response = await fetch(url, {
@@ -91,6 +91,31 @@ export default {
     if (!process.env.CRON_SECRET || request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (new URL(request.url).searchParams.get('inspect') === 'channels') {
+      const { HERP_API_KEY, HERP_REQUISITION_ID } = process.env;
+      if (!HERP_API_KEY || !HERP_REQUISITION_ID) {
+        return Response.json({ error: 'Missing configuration' }, { status: 503 });
+      }
+      const toDate = jstDate(new Date());
+      const from = new Date(`${toDate}T00:00:00Z`);
+      from.setUTCDate(from.getUTCDate() - 30);
+      const fromDate = from.toISOString().slice(0, 10);
+      try {
+        const candidacies = await readHerpCandidacies({
+          apiKey: HERP_API_KEY, requisitionId: HERP_REQUISITION_ID, fromDate, toDate,
+        });
+        const counts = new Map();
+        for (const candidacy of candidacies) {
+          if (candidacy.requisitionId !== HERP_REQUISITION_ID) continue;
+          const type = candidacy.channel?.type ?? 'unknown';
+          counts.set(type, (counts.get(type) ?? 0) + 1);
+        }
+        return Response.json({ fromDate, toDate, channels: Object.fromEntries(counts) });
+      } catch (error) {
+        console.error('HERP channel inspection failed:', error.message);
+        return Response.json({ error: 'Inspection failed' }, { status: 502 });
+      }
+    }
     if (process.env.HERP_META_ENABLED !== 'true') {
       return Response.json({ status: 'disabled' }, { status: 503 });
     }
@@ -109,7 +134,8 @@ export default {
     const targetDate = previousJstDate();
     try {
       const candidacies = await readHerpCandidacies({
-        apiKey: HERP_API_KEY, requisitionId: HERP_REQUISITION_ID, targetDate,
+        apiKey: HERP_API_KEY, requisitionId: HERP_REQUISITION_ID,
+        fromDate: targetDate, toDate: targetDate,
       });
       const events = candidacies.map((candidacy) => makeMetaEvent(candidacy, {
         requisitionId: HERP_REQUISITION_ID,
