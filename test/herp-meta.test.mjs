@@ -10,11 +10,11 @@ test('daily window follows JST, including UTC date boundary', () => {
 
 test('only the configured job and channel become CompleteRegistration', () => {
   const options = {
-    requisitionId: 'job-99', channelType: 'company-site',
+    requisitionId: 'job-99', channelType: 'careerPage',
     sourceUrl: 'https://herp.careers/v1/crazy/job99', targetDate: '2026-10-14',
   };
   const candidacy = {
-    id: 'app-1', requisitionId: 'job-99', channel: { type: 'company-site' },
+    id: 'app-1', requisitionId: 'job-99', channel: { type: 'careerPage' },
     appliedAt: '2026-10-14T12:00:00+09:00', email: ' Person@Example.COM ',
   };
   const event = makeMetaEvent(candidacy, options);
@@ -51,8 +51,8 @@ test('authenticated channel inspection returns counts without applicant data or 
   globalThis.fetch = async (url) => {
     assert.equal(new URL(url).origin, 'https://public-api.herp.cloud');
     return Response.json({ candidacies: [
-      { requisitionId: 'job-99', channel: { type: 'company-site' }, email: 'private@example.com' },
-      { requisitionId: 'job-99', channel: { type: 'company-site' }, name: 'Private Candidate' },
+      { requisitionId: 'job-99', channel: { type: 'careerPage' }, email: 'private@example.com' },
+      { requisitionId: 'job-99', channel: { type: 'careerPage' }, name: 'Private Candidate' },
       { requisitionId: 'other-job', channel: { type: 'manual' } },
     ], hasNextPage: false });
   };
@@ -61,7 +61,7 @@ test('authenticated channel inspection returns counts without applicant data or 
   }));
   assert.equal(response.status, 200);
   const result = await response.json();
-  assert.deepEqual(result.channels, { 'company-site': 2 });
+  assert.deepEqual(result.channels, { 'careerPage': 2 });
   assert.equal(JSON.stringify(result).includes('private@example.com'), false);
   assert.equal(JSON.stringify(result).includes('Private Candidate'), false);
 });
@@ -81,7 +81,7 @@ test('sync sends only a hashed email and a HERP CompleteRegistration', async (t)
   });
   Object.assign(process.env, {
     CRON_SECRET: 'local-test-secret', HERP_META_ENABLED: 'true', HERP_API_KEY: 'herp-test',
-    HERP_REQUISITION_ID: 'job-99', HERP_CHANNEL_TYPE: 'company-site',
+    HERP_REQUISITION_ID: 'job-99', HERP_CHANNEL_TYPE: 'careerPage',
     HERP_EVENT_SOURCE_URL: 'https://herp.careers/v1/crazy/job99',
     META_CAPI_TOKEN: 'meta-test', META_PIXEL_ID: '1234',
   });
@@ -93,7 +93,7 @@ test('sync sends only a hashed email and a HERP CompleteRegistration', async (t)
       assert.equal(query.searchParams.get('requisitionId'), 'job-99');
       assert.equal(query.searchParams.get('appliedAtFrom'), targetDate);
       return Response.json({ candidacies: [{ id: 'app-1', requisitionId: 'job-99',
-        channel: { type: 'company-site' }, appliedAt: `${targetDate}T12:00:00+09:00`,
+        channel: { type: 'careerPage' }, appliedAt: `${targetDate}T12:00:00+09:00`,
         email: 'Person@Example.com', name: 'Private Candidate' }], hasNextPage: false });
     }
     assert.equal(String(url), 'https://graph.facebook.com/v25.0/1234/events');
