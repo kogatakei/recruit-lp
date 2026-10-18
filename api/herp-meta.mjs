@@ -17,6 +17,18 @@ export function previousJstDate(now = new Date()) {
   return previous.toISOString().slice(0, 10);
 }
 
+export function syncJstDate(now = new Date(), override) {
+  if (!override) return previousJstDate(now);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(override) ||
+      new Date(`${override}T00:00:00Z`).toISOString().slice(0, 10) !== override) {
+    throw new Error('Invalid HERP_SYNC_DATE');
+  }
+  const daysAgo = (Date.parse(`${jstDate(now)}T00:00:00Z`) -
+    Date.parse(`${override}T00:00:00Z`)) / 86400000;
+  if (daysAgo < 1 || daysAgo > 6) throw new Error('HERP_SYNC_DATE must be within the last 6 days');
+  return override;
+}
+
 export function makeMetaEvent(candidacy, { requisitionId, channelType, sourceUrl, targetDate }) {
   if (candidacy.requisitionId !== requisitionId) return null;
   if (candidacy.channel?.type !== channelType) return null;
@@ -117,7 +129,7 @@ export default {
       }
     }
     if (process.env.HERP_META_ENABLED !== 'true') {
-      return Response.json({ status: 'disabled' }, { status: 503 });
+      return Response.json({ status: 'disabled' });
     }
 
     const { HERP_API_KEY, HERP_REQUISITION_ID, HERP_CHANNEL_TYPE, HERP_EVENT_SOURCE_URL,
@@ -131,8 +143,9 @@ export default {
       return Response.json({ error: 'Invalid HERP source URL' }, { status: 503 });
     }
 
-    const targetDate = previousJstDate();
+    let targetDate;
     try {
+      targetDate = syncJstDate(new Date(), process.env.HERP_SYNC_DATE);
       const candidacies = await readHerpCandidacies({
         apiKey: HERP_API_KEY, requisitionId: HERP_REQUISITION_ID,
         fromDate: targetDate, toDate: targetDate,
@@ -147,7 +160,7 @@ export default {
       return Response.json({ date: targetDate, candidates: candidacies.length, events: events.length, received });
     } catch (error) {
       console.error('HERP to Meta sync failed:', error.message);
-      return Response.json({ error: 'Sync failed', date: targetDate }, { status: 502 });
+      return Response.json({ error: 'Sync failed', date: targetDate ?? null }, { status: 502 });
     }
   },
 };
