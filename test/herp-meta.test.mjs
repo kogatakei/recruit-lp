@@ -1,11 +1,20 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createHash } from 'node:crypto';
-import { jstDate, makeMetaEvent, previousJstDate } from '../api/herp-meta.mjs';
+import { jstDate, makeMetaEvent, previousJstDate, syncJstDate } from '../api/herp-meta.mjs';
 
 test('daily window follows JST, including UTC date boundary', () => {
   assert.equal(previousJstDate(new Date('2026-10-15T00:00:00Z')), '2026-10-14');
   assert.equal(jstDate('2026-10-14T15:00:00Z'), '2026-10-15');
+});
+
+test('one-time sync date accepts only the prior six JST dates', () => {
+  const now = new Date('2026-10-18T00:00:00Z');
+  assert.equal(syncJstDate(now), '2026-10-17');
+  assert.equal(syncJstDate(now, '2026-10-14'), '2026-10-14');
+  assert.throws(() => syncJstDate(now, '2026-10-11'));
+  assert.throws(() => syncJstDate(now, '2026-10-18'));
+  assert.throws(() => syncJstDate(now, '2026-02-30'));
 });
 
 test('only the configured job and channel become CompleteRegistration', () => {
