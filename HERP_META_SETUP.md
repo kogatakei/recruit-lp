@@ -11,7 +11,7 @@
 ## 有効化前に必要なこと
 
 1. HERP管理者がHERP Hire APIの利用申請と追加規約への同意を行い、`candidacy:read` スコープのAPIキーを発行する。利用可能プランも確認する。
-2. HERP APIで求人99の実応募を1件確認し、求人ページ経由の `channel.type` の実際の値を調べる。手動追加や別媒体からの応募を混ぜないため、推測値では有効化しない。
+2. HERP APIで対象職種の実応募22件を確認済み。`channel.type` は求人ページからの応募20件が `careerPage`、手動登録2件が `manual`。`careerPage` のみ送信対象にする。
 3. Metaイベントマネージャーで対象ピクセルのConversions APIトークンを用意する。
 4. 応募者メールアドレスの正規化・SHA-256ハッシュ化とMetaへの送信について、社内の個人情報の取り扱いと応募者向けの告知を確認する。ユーザーはこの送信方式を了承済み。ハッシュ化後も慎重に扱う。
 5. Vercelの本番環境変数に以下を設定する。鍵をGitHubやチャットに貼らない。
@@ -21,7 +21,7 @@
 | `CRON_SECRET` | 16文字以上のランダムな秘密値 |
 | `HERP_API_KEY` | HERP管理者が発行した読取専用APIキー |
 | `HERP_REQUISITION_ID` | 求人99の職種ID（`6f6144cc-a70c-43d2-aa2c-79d6b406d921`） |
-| `HERP_CHANNEL_TYPE` | 実応募で確認した求人ページ経由の `channel.type` |
+| `HERP_CHANNEL_TYPE` | `careerPage`（実応募で確認済み） |
 | `HERP_EVENT_SOURCE_URL` | `https://herp.careers/v1/crazy/5PNALVuXyI30`（限定公開トークンなし） |
 | `META_CAPI_TOKEN` | 対象ピクセルのCAPIトークン |
 | `META_PIXEL_ID` | `2136969587217791` |
@@ -29,7 +29,7 @@
 
 ## 応募経路の診断
 
-`HERP_META_ENABLED` が未設定の状態でも、認証済みの `GET /api/herp-meta?inspect=channels` で直近30日間の求人99の `channel.type` ごとの件数だけを確認できます。`Authorization: Bearer <CRON_SECRET>` が必須です。応募者の氏名・メールアドレス・応募IDは応答に含めず、Metaにも送信しません。結果を実際の求人ページ経由の応募と照合してから `HERP_CHANNEL_TYPE` を設定します。経路を特定できない場合はHERP管理者に確認します。
+`HERP_META_ENABLED` が未設定の状態でも、認証済みの `GET /api/herp-meta?inspect=channels` で直近30日間の求人99の `channel.type` ごとの件数だけを確認できます。`Authorization: Bearer <CRON_SECRET>` が必須です。応募者の氏名・メールアドレス・応募IDは応答に含めず、Metaにも送信しません。実応募22件の照合で `careerPage` と `manual` を確認しました。`careerPage` だけでは求人ページへの流入元広告は判別できません。広告経由かどうかはMeta側の照合・アトリビューションに依存します。
 
 ## 動作と検証
 
