@@ -156,7 +156,12 @@ export default {
         sourceUrl: sourceUrl.href,
         targetDate,
       })).filter(Boolean);
+      if (process.env.HERP_META_DRY_RUN === 'true') {
+        console.info('HERP_META_SUMMARY', JSON.stringify({ date: targetDate, candidates: candidacies.length, events: events.length, mode: 'dry-run' }));
+        return Response.json({ date: targetDate, candidates: candidacies.length, events: events.length, status: 'dry-run' });
+      }
       const received = await sendMetaEvents({ events, pixelId: META_PIXEL_ID, accessToken: META_CAPI_TOKEN });
+      console.info('HERP_META_SUMMARY', JSON.stringify({ date: targetDate, candidates: candidacies.length, events: events.length, received }));
       return Response.json({ date: targetDate, candidates: candidacies.length, events: events.length, received });
     } catch (error) {
       console.error('HERP to Meta sync failed:', error.message);
